@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ghana Gold Data Hub</title>
+
+<script src="https://js.paystack.co/v1/inline.js"></script>
+
+<style>
+body{
+    margin:0;
+    font-family:'Segoe UI',sans-serif;
+    background: linear-gradient(to right,#0f0c29,#1e1b4b,#000000);
+    color:white;
+}
+header{
+    background: linear-gradient(45deg,gold,#ffcc00);
+    padding:20px;
+    text-align:center;
+    font-size:26px;
+    font-weight:bold;
+    color:black;
+    box-shadow:0 4px 10px rgba(255,215,0,0.5);
+}
+nav{
+    display:flex;
+    justify-content:center;
+    background:#111827;
+}
+nav button{
+    background:none;
+    border:none;
+    padding:15px 25px;
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+}
+nav button:hover{
+    background:gold;
+    color:black;
+}
+.section{
+    display:none;
+    padding:30px;
+}
+.card{
+    background:#111827;
+    padding:25px;
+    border-radius:12px;
+    box-shadow:0 0 20px rgba(255,215,0,0.3);
+    max-width:500px;
+    margin:auto;
+}
+input, select{
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    border:none;
+    border-radius:6px;
+}
+button.primary{
+    width:100%;
+    padding:12px;
+    background:gold;
+    border:none;
+    border-radius:6px;
+    font-weight:bold;
+    cursor:pointer;
+}
+button.primary:hover{
+    background:#ffcc00;
+}
+.admin-panel{
+    display:none;
+    margin-top:20px;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+}
+th, td{
+    border:1px solid #444;
+    padding:8px;
+    text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<header>King Fresh GOLD DATA HUB 💎</header>
+
+<nav>
+<button onclick="showSection('home')">Home</button>
+<button onclick="showSection('buy')">Buy Data</button>
+<button onclick="showSection('admin')">Admin</button>
+</nav>
+
+<!-- HOME -->
+<div id="home" class="section">
+<h2>Premium Data Reselling Platform</h2>
+<p>Fast • Secure • Reliable MoMo Payments</p>
+</div>
+
+<!-- BUY -->
+<div id="buy" class="section">
+<div class="card">
+<h2>Buy Data Bundle</h2>
+
+<select id="network">
+<option>MTN Ghana</option>
+<option>Telecel Ghana</option>
+<option>AirtelTigo Ghana</option>
+</select>
+
+<select id="plan">
+<option value="5">1GB - GHS 5</option>
+<option value="10">2GB - GHS 9.40</option>
+<option value="20">3GB - GHS 13</option>
+<option value="50">4GB - GHS 17.80</option>
+</select>
+
+<input type="text" id="name" placeholder="Customer Full Name">
+<input type="text" id="phone" placeholder="Phone Number">
+
+<button class="primary" onclick="payWithPaystack()">Pay with MoMo</button>
+
+</div>
+</div>
+
+<!-- ADMIN -->
+<div id="admin" class="section">
+<div class="card">
+<h2>Admin Login</h2>
+<input type="password" id="adminPass" placeholder="Enter Password">
+<button class="primary" onclick="adminLogin()">Login</button>
+
+<div class="admin-panel" id="adminPanel">
+<h3>Add Data Plan</h3>
+<input type="text" id="planName" placeholder="Plan Name">
+<input type="number" id="planPrice" placeholder="Price in GHS">
+<button class="primary" onclick="addPlan()">Add Plan</button>
+
+<h3>Orders</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Network</th>
+<th>Plan</th>
+<th>Phone</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody id="ordersTable"></tbody>
+</table>
+</div>
+
+</div>
+</div>
+
+<script>
+let orders=[];
+
+function showSection(section){
+document.querySelectorAll('.section').forEach(s=>s.style.display='none');
+document.getElementById(section).style.display='block';
+}
+showSection('home');
+
+function payWithPaystack(){
+
+let name=document.getElementById("name").value;
+let amount=document.getElementById("plan").value;
+let phone=document.getElementById("phone").value;
+let network=document.getElementById("network").value;
+let planText=document.getElementById("plan").options[document.getElementById("plan").selectedIndex].text;
+
+if(name==""||phone==""){
+alert("Fill all fields");
+return;
+}
+
+/* Paystack requires email → generate hidden system email */
+let fakeEmail = name.replace(/\s+/g,'').toLowerCase() + "@ghanadatahub.com";
+
+let handler = PaystackPop.setup({
+key: 'pk_live_19c23d4809beb2c272365eb1d0d22d3e8cd7fd9f',
+email: fakeEmail,
+amount: amount * 100,
+currency: "GHS",
+callback: function(response){
+
+orders.push({
+name:name,
+network:network,
+plan:planText,
+phone:phone,
+status:"Paid"
+});
+
+updateOrders();
+alert("Payment Successful! Reference: " + response.reference);
+},
+onClose: function(){
+alert('Transaction Cancelled');
+}
+});
+handler.openIframe();
+}
+
+function updateOrders(){
+let table=document.getElementById("ordersTable");
+table.innerHTML="";
+orders.forEach(o=>{
+table.innerHTML+=`
+<tr>
+<td>${o.name}</td>
+<td>${o.network}</td>
+<td>${o.plan}</td>
+<td>${o.phone}</td>
+<td>${o.status}</td>
+</tr>
+`;
+});
+}
+
+function adminLogin(){
+if(document.getElementById("adminPass").value==="admin123"){
+document.getElementById("adminPanel").style.display="block";
+}else{
+alert("Wrong Password");
+}
+}
+
+function addPlan(){
+let name=document.getElementById("planName").value;
+let price=document.getElementById("planPrice").value;
+let select=document.getElementById("plan");
+
+let option=document.createElement("option");
+option.text=`${name} - GHS ${price}`;
+option.value=price;
+select.add(option);
+
+alert("Plan Added");
+}
+</script>
+
+</body>
+</html>

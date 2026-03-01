@@ -1,0 +1,64 @@
+<?php
+include 'config.php';
+
+$reference = $_GET['reference'];
+
+$url = "https://api.paystack.co/transaction/verify/".$reference;
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $url);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+    "Authorization: Bearer $paystack_secret_key"
+));
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+$response = curl_exec($ch);
+curl_close($ch);
+
+$result = json_decode($response);
+
+if($result->data->status == "success"){
+
+$name = $_GET['name'];
+$phone = $_GET['phone'];
+$network = $_GET['network'];
+$plan = $_GET['plan'];
+$amount = $_GET['amount'];
+
+$status = "Paid";
+
+$stmt = $conn->prepare("INSERT INTO orders(name,network,plan,phone,amount,reference,status) VALUES(?,?,?,?,?,?,?)");
+$stmt->bind_param("sssssss",$name,$network,$plan,$phone,$amount,$reference,$status);
+$stmt->execute();
+
+/* =====================
+   SEND SMS CONFIRMATION
+   ===================== */
+
+$message = "Hello $name, your payment of GHS $amount for $plan on $network was successful. Thank you for choosing Ghana Gold Data Hub.";
+
+$sms_url = "https://sms.arkesel.com/api/v2/sms/send";
+
+$data = [
+    "sender" => "DataHub",
+    "message" => $message,
+    "recipients" => [$phone]
+];
+
+$ch = curl_init($sms_url);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    "api-key: $sms_api_key",
+    "Content-Type: application/json"
+]);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+$sms_response = curl_exec($ch);
+curl_close($ch);
+
+echo "<h2>✅ Payment Verified!</h2>";
+echo "<p>SMS Confirmation Sent Successfully.</p>";
+
+}else{
+echo "<h2>❌ Payment Verification Failed!</h2>";
+}
+?>
